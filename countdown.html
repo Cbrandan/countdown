@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contador regresivo</title>
+  <style>
+    :root{
+      /* 🎨 Personalizá colores y radios */
+      --bg: transparent;         /* transparente para superponer en Canva */
+      --fg: #111;
+      --muted:#666;
+      --accent:#0ea5e9;          /* cian suave */
+      --card:#ffffffee;          /* levemente translúcido */
+      --radius:1.25rem;
+      --shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      display:grid; place-items:center;
+    }
+    .wrap{
+      width:min(1000px, 96vw);
+      padding: clamp(12px, 3vw, 28px);
+    }
+    .title{
+      font-weight:700;
+      font-size: clamp(18px, 3.6vw, 34px);
+      line-height:1.15; margin:0 0 .6rem 0; text-align:center;
+    }
+    .deadline{
+      text-align:center; font-size: clamp(12px, 2.2vw, 16px); color:var(--muted); margin-bottom: 1rem;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(8px, 2vw, 16px);
+    }
+    .box{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: clamp(10px, 2.5vw, 18px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height: clamp(76px, 18vw, 140px);
+    }
+    .num{
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      letter-spacing: .5px;
+      font-size: clamp(28px, 9vw, 64px);
+      line-height:1;
+    }
+    .label{
+      margin-top: .35rem;
+      font-size: clamp(11px, 2.4vw, 14px);
+      text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    }
+    .progress{
+      height: 6px; width:100%; background:#eaeaea; border-radius: 999px; overflow:hidden; margin-top:.75rem;
+    }
+    .bar{height:100%; width:0%; background: var(--accent); transition: width .6s ease;}
+    .note{ text-align:center; margin-top:1rem; font-size: clamp(12px, 2.4vw, 14px); color:var(--muted);}
+    .live{ display:inline-block; width:.5em; height:.5em; border-radius:50%; background:var(--accent); margin-right:.5ch; vertical-align:middle; animation: pulse 1.2s infinite ease-in-out; }
+    @keyframes pulse{0%{opacity:.4;}50%{opacity:1;}100%{opacity:.4;}}
+    .done{ color: var(--accent); font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- ✍️ Configuración (editá estos dos data-atributos) -->
+    <h1 class="title" id="title" 
+        data-title="Cuenta regresiva para el EVENTO"
+        data-date="2025-12-31T23:59:59-03:00">
+      <!-- Se completa por JS -->
+    </h1>
+    <div class="deadline" id="deadline"></div>
+
+    <div class="grid" aria-live="polite" aria-atomic="true">
+      <div class="box"><div class="num" id="days">--</div><div class="label">Días</div></div>
+      <div class="box"><div class="num" id="hours">--</div><div class="label">Horas</div></div>
+      <div class="box"><div class="num" id="minutes">--</div><div class="label">Minutos</div></div>
+      <div class="box"><div class="num" id="seconds">--</div><div class="label">Segundos</div></div>
+    </div>
+
+    <div class="progress" role="progressbar" aria-label="Progreso hacia la fecha objetivo" aria-valuemin="0" aria-valuemax="100">
+      <div class="bar" id="bar"></div>
+    </div>
+
+    <p class="note" id="note"><span class="live"></span>Actualizándose en tiempo real…</p>
+  </div>
+
+  <script>
+    // ========= CONFIGURACIÓN RÁPIDA =========
+    // Editá estos valores en el H1 (arriba) o vía URL:
+    // Ejemplo de URL con parámetros:
+    //   ?title=Gran%20Lanzamiento&date=2025-12-31T23:59:59-03:00
+    // ========================================
+    const titleEl = document.getElementById('title');
+    const deadlineEl = document.getElementById('deadline');
+    const noteEl = document.getElementById('note');
+    const dEl = document.getElementById('days');
+    const hEl = document.getElementById('hours');
+    const mEl = document.getElementById('minutes');
+    const sEl = document.getElementById('seconds');
+    const barEl = document.getElementById('bar');
+
+    // Lee de atributos o query params
+    const params = new URLSearchParams(location.search);
+    const titleText = params.get('title') || titleEl.dataset.title || 'Cuenta regresiva';
+    const dateText  = params.get('date')  || titleEl.dataset.date  || '2025-12-31T23:59:59-03:00';
+
+    // Renderiza título
+    titleEl.textContent = titleText;
+
+    // Intenta parsear la fecha
+    // Recomendado: ISO 8601 con offset, p.ej. 2025-12-31T23:59:59-03:00
+    const target = new Date(dateText);
+
+    // Si es inválida, marcá error visible y no sigas
+    if (isNaN(target.getTime())) {
+      deadlineEl.textContent = '⚠️ Fecha objetivo inválida. Usá formato ISO: 2025-12-31T23:59:59-03:00';
+      dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '--';
+      noteEl.textContent = '';
+    } else {
+      // Muestra la fecha en la zona horaria local del visor
+      const full = new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'full', timeStyle: 'long'
+      }).format(target);
+      deadlineEl.textContent = `Hasta: ${full}`;
+      start();
+    }
+
+    function pad(n){ return String(n).padStart(2,'0'); }
+
+    function start(){
+      const startTime = Date.now();
+      const totalMs = Math.max(target.getTime() - startTime, 0);
+
+      const tick = () => {
+        const now = Date.now();
+        let diff = target.getTime() - now;
+
+        if (diff <= 0) {
+          dEl.textContent = '00';
+          hEl.textContent = '00';
+          mEl.textContent = '00';
+          sEl.textContent = '00';
+          noteEl.innerHTML = '<span class="done">¡Llegó el momento!</span>';
+          barEl.style.width = '100%';
+          return; // detener
+        }
+
+        const sec = Math.floor(diff / 1000);
+        const days = Math.floor(sec / 86400);
+        const hours = Math.floor((sec % 86400) / 3600);
+        const minutes = Math.floor((sec % 3600) / 60);
+        const seconds = sec % 60;
+
+        dEl.textContent = pad(days);
+        hEl.textContent = pad(hours);
+        mEl.textContent = pad(minutes);
+        sEl.textContent = pad(seconds);
+
+        // Progreso (0 → 100%)
+        const elapsed = now - startTime;
+        const pct = Math.max(0, Math.min(100, (elapsed / (totalMs || 1)) * 100));
+        barEl.style.width = pct + '%';
+
+        // Alinear el intervalo a segundo exacto
+        const next = 1000 - (now % 1000);
+        setTimeout(tick, next);
+      };
+
+      tick();
+    }
+  </script>
+
+  <noscript>Activá JavaScript para ver el contador en vivo.</noscript>
+</body>
+</html>
