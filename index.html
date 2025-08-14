@@ -72,7 +72,7 @@
   <div class="wrap">
     <!-- ✍️ Configuración (editá estos dos data-atributos) -->
     <h1 class="title" id="title" 
-        data-title="Cuenta regresiva para el EVENTO"
+        data-title="Los XV de Nahiara están llegando"
         data-date="2025-12-31T23:59:59-03:00">
       <!-- Se completa por JS -->
     </h1>
@@ -96,7 +96,7 @@
     // ========= CONFIGURACIÓN RÁPIDA =========
     // Editá estos valores en el H1 (arriba) o vía URL:
     // Ejemplo de URL con parámetros:
-    //   ?title=Gran%20Lanzamiento&date=2025-12-31T23:59:59-03:00
+    //   ?title=Save%the&date=2025-12-20T21:00:00-03:00
     // ========================================
     const titleEl = document.getElementById('title');
     const deadlineEl = document.getElementById('deadline');
@@ -116,12 +116,12 @@
     titleEl.textContent = titleText;
 
     // Intenta parsear la fecha
-    // Recomendado: ISO 8601 con offset, p.ej. 2025-12-31T23:59:59-03:00
+    // Recomendado: ISO 8601 con offset, p.ej. 2025-12-20T21:00:00-03:00
     const target = new Date(dateText);
 
     // Si es inválida, marcá error visible y no sigas
     if (isNaN(target.getTime())) {
-      deadlineEl.textContent = '⚠️ Fecha objetivo inválida. Usá formato ISO: 2025-12-31T23:59:59-03:00';
+      deadlineEl.textContent = '⚠️ Fecha objetivo inválida. Usá formato ISO: 2025-12-20T21:00:00-03:00';
       dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '--';
       noteEl.textContent = '';
     } else {
@@ -181,3 +181,4 @@
   <noscript>Activá JavaScript para ver el contador en vivo.</noscript>
 </body>
 </html>
+
